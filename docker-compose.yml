@@ -50,5 +50,14 @@ services:
 #      - '/srv/gitlab/data:/var/opt/gitlab'
 #    networks:
 #      - net
+  remote_ubuntu:
+    container_name: remote-ubuntu
+    image: remote-ubuntu
+    build:
+      context: ubuntu
+    ports:
+      - '8060:8080'
+    networks:
+      - net
 networks:
   net:

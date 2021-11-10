@@ -1,0 +1,63 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.42">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.9.2"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.9.2">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2633.v6baeedc13805">
+    <script>pipeline {
+    agent any
+
+    stages {
+        stage(&apos;clone&apos;) {
+            steps {
+                sshagent([&apos;3dfc7ab3-ca16-4a72-acdd-234af2acc0d9&apos;]) {
+                    sh &apos;&apos;&apos;
+                        ssh -o StrictHostKeyChecking=no remote_user@remote_ubuntu &apos;bash -s &lt;&lt; &apos;ENDSSH&apos;
+                        pwd
+                        git clone https://github.com/spring-projects/spring-petclinic.git
+                        ls spring-petclinic
+                ENDSSH&apos;
+                        &apos;&apos;&apos;.stripIndent()
+                }
+            }
+        }
+        stage(&apos;build&apos;) {
+            steps {
+                sshagent([&apos;3dfc7ab3-ca16-4a72-acdd-234af2acc0d9&apos;]) {
+                    sh &apos;&apos;&apos;
+                        ssh -o StrictHostKeyChecking=no remote_user@remote_ubuntu &apos;bash -s &lt;&lt; &apos;ENDSSH&apos;
+                        cd spring-petclinic
+                        ./mvnw package
+                ENDSSH&apos;
+                        &apos;&apos;&apos;.stripIndent()
+                }
+            }
+        }
+        stage(&apos;deploy&apos;) {
+            steps {
+                sshagent([&apos;3dfc7ab3-ca16-4a72-acdd-234af2acc0d9&apos;]) {
+                    sh &apos;&apos;&apos;
+                        ssh -o StrictHostKeyChecking=no remote_user@remote_ubuntu &apos;bash -s &lt;&lt; &apos;ENDSSH&apos;
+                        ./restart.sh
+                        echo &quot;WEB RUNNING&quot;
+                ENDSSH&apos;
+                        &apos;&apos;&apos;.stripIndent()
+                }
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
