@@ -1,15 +1,48 @@
 pipeline {
     agent any
-
+    
+    environment {
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_KEY')
+        AWS_ACCESS_KEY_ID = credentials ('AWS_ACCESS_KEY')
+    }
+    
     stages {
         stage('clone') {
             steps {
-                git branch: 'main', url: 'https://github.com/spring-projects/spring-petclinic'
+                git branch: 'main', url: 'https://github.com/spring-projects/spring-petclinic.git'
             }
         }
         stage('build') {
-            cd spring-petclinic
-            ./mvnw package
+            steps {
+                sh './mvnw package'
+            }
+        }
+        stage('send-artifact') {
+            steps {
+                sh '''
+                    export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                    export AWS_DEFAULT_REGION=us-east-1
+                    export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                    aws s3 cp target/*.jar s3://artifacts-web-bnk/spring-petclinic-${BUILD_NUMBER}.jar
+                '''
+            }
+        }
+        stage('deploy') {
+            steps {
+                sshagent(['3dfc7ab3-ca16-4a72-acdd-234af2acc0d9']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no remote_user@remote_ubuntu 'bash -s << 'ENDSSH'
+                        rm -rf *.jar
+                        export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}'
+                        export AWS_DEFAULT_REGION=us-east-1
+                        export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}'
+                        aws s3 cp s3://artifacts-web-bnk/spring-petclinic-'${BUILD_NUMBER}'.jar .
+                        pkill java
+                        nohup java -jar *.jar > output.log &
+                ENDSSH'
+                        '''.stripIndent()
+                }
+            }
         }
     }
 }
