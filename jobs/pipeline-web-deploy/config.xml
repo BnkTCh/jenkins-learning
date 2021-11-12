@@ -15,31 +15,31 @@
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2633.v6baeedc13805">
     <script>pipeline {
     agent any
-
+    
+    environment {
+        AWS_SECRET_ACCESS_KEY = credentials(&apos;AWS_SECRET_KEY&apos;)
+        AWS_ACCESS_KEY_ID = credentials (&apos;AWS_ACCESS_KEY&apos;)
+    }
+    
     stages {
         stage(&apos;clone&apos;) {
             steps {
-                sshagent([&apos;3dfc7ab3-ca16-4a72-acdd-234af2acc0d9&apos;]) {
-                    sh &apos;&apos;&apos;
-                        ssh -o StrictHostKeyChecking=no remote_user@remote_ubuntu &apos;bash -s &lt;&lt; &apos;ENDSSH&apos;
-                        pwd
-                        git clone https://github.com/spring-projects/spring-petclinic.git
-                        ls spring-petclinic
-                ENDSSH&apos;
-                        &apos;&apos;&apos;.stripIndent()
-                }
+                git branch: &apos;main&apos;, url: &apos;https://github.com/spring-projects/spring-petclinic.git&apos;
             }
         }
         stage(&apos;build&apos;) {
             steps {
-                sshagent([&apos;3dfc7ab3-ca16-4a72-acdd-234af2acc0d9&apos;]) {
-                    sh &apos;&apos;&apos;
-                        ssh -o StrictHostKeyChecking=no remote_user@remote_ubuntu &apos;bash -s &lt;&lt; &apos;ENDSSH&apos;
-                        cd spring-petclinic
-                        ./mvnw package
-                ENDSSH&apos;
-                        &apos;&apos;&apos;.stripIndent()
-                }
+                sh &apos;./mvnw package&apos;
+            }
+        }
+        stage(&apos;send-artifact&apos;) {
+            steps {
+                sh &apos;&apos;&apos;
+                    export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                    export AWS_DEFAULT_REGION=us-east-1
+                    export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                    aws s3 cp target/*.jar s3://artifacts-web-bnk/spring-petclinic-${BUILD_NUMBER}.jar
+                &apos;&apos;&apos;
             }
         }
         stage(&apos;deploy&apos;) {
@@ -47,8 +47,13 @@
                 sshagent([&apos;3dfc7ab3-ca16-4a72-acdd-234af2acc0d9&apos;]) {
                     sh &apos;&apos;&apos;
                         ssh -o StrictHostKeyChecking=no remote_user@remote_ubuntu &apos;bash -s &lt;&lt; &apos;ENDSSH&apos;
-                        ./restart.sh
-                        echo &quot;WEB RUNNING&quot;
+                        rm -rf *.jar
+                        export AWS_ACCESS_KEY_ID=&apos;${AWS_ACCESS_KEY_ID}&apos;
+                        export AWS_DEFAULT_REGION=us-east-1
+                        export AWS_SECRET_ACCESS_KEY=&apos;${AWS_SECRET_ACCESS_KEY}&apos;
+                        aws s3 cp s3://artifacts-web-bnk/spring-petclinic-&apos;${BUILD_NUMBER}&apos;.jar .
+                        pkill java
+                        nohup java -jar *.jar &gt; output.log &amp;
                 ENDSSH&apos;
                         &apos;&apos;&apos;.stripIndent()
                 }
