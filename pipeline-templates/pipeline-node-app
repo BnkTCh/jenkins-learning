@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+    
+    environment {
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_KEY')
+        AWS_ACCESS_KEY_ID = credentials ('AWS_ACCESS_KEY')
+    }
+    
+    stages {
+        stage('clone') {
+            steps {
+                git branch: 'biancatorres', url: 'https://github.com/BnkTCh/simple-nodejs-app.git'
+            }
+        }
+        stage('zip-files') {
+            steps {
+                sh 'pwd'
+                sh 'zip -r nodejs-app.zip config package-lock.json package.json routes server.js'
+            }
+        }
+        stage('send-artif') {
+            steps {
+                sh '''
+                    export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                    export AWS_DEFAULT_REGION=us-east-1
+                    export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                    aws s3 cp node*.zip s3://artifacts-nodejs-app/simple-nodejs-${BUILD_NUMBER}.zip
+                '''
+            }
+        }
+        stage('deploy') {
+            steps {
+                sshagent(['e9e2c77d-0750-489e-b64b-971d17fe42ab']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no remote_user@remote_ubuntu 'bash -s << 'ENDSSH'
+                        rm -rf *.zip
+                        export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}'
+                        export AWS_DEFAULT_REGION=us-east-1
+                        export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}'
+                        aws s3 cp s3://artifacts-nodejs-app/simple-nodejs-'${BUILD_NUMBER}'.zip simple-nodejs.zip
+                        unzip -o simple-nodejs.zip -d simple-nodejs
+                        cd simple-nodejs
+                        pkill node
+                        npm install
+                        nohup npm start > output.log &
+                ENDSSH'
+                        '''.stripIndent()
+                }
+            }
+        }
+    }
+}

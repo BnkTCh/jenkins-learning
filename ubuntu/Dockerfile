@@ -7,11 +7,13 @@ RUN apt-get install -y git && \
 apt-get install -y default-jre && \
 apt-get install -y default-jdk
 
-RUN apt-get install -y zip && apt-get install -y curl
+RUN apt-get update && apt-get install -y zip && apt-get install -y curl
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install
+unzip awscliv2.zip && \
+./aws/install
+
+RUN apt-get update && apt-get install -y nodejs npm
 
 RUN useradd remote_user && \
     echo "remote_user:1234" | chpasswd && \
@@ -22,8 +24,10 @@ RUN useradd remote_user && \
 COPY remote-key.pub /home/remote_user/.ssh/authorized_keys
 
 RUN chown remote_user:remote_user -R /home/remote_user && \
-    chmod 400 /home/remote_user/.ssh/authorized_keys
+    chmod 600 /home/remote_user/.ssh/authorized_keys
 
 EXPOSE 8080
+
+EXPOSE 4000
 
 CMD /usr/sbin/sshd -D

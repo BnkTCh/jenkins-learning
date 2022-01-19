@@ -57,6 +57,7 @@ services:
       context: ubuntu
     ports:
       - '8060:8080'
+      - '4000:4000'
     networks:
       - net
 networks:

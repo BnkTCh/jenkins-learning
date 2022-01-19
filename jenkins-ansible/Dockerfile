@@ -7,4 +7,8 @@ RUN apt-get update && apt-get install python3-pip -y && \
 
 RUN apt-get install -y awscli
 
+RUN apt-get install -y zip 
+
 USER jenkins
+
+EXPOSE 4000
