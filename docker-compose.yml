@@ -57,7 +57,15 @@ services:
       context: ubuntu
     ports:
       - '8060:8080'
-      - '4000:4000'
+      - '5000:5000'
+    networks:
+      - net
+  agent-jenkins:
+    container_name: agent-jenkins
+    image: agent-jenkins
+    build:
+      context: agent
+#    ports:
     networks:
       - net
 networks:

@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('clone') {
             steps {
-                git branch: 'biancatorres', url: 'https://github.com/BnkTCh/simple-nodejs-app.git'
+                git branch: 'main', credentialsId: 'c0c45c28-e52b-4776-927f-648729a98d3d', url: 'https://github.globant.com/bianca-torres/Simple-nodeapp.git'
             }
         }
         stage('zip-files') {

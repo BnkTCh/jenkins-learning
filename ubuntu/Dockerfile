@@ -28,6 +28,6 @@ RUN chown remote_user:remote_user -R /home/remote_user && \
 
 EXPOSE 8080
 
-EXPOSE 4000
+EXPOSE 5000
 
 CMD /usr/sbin/sshd -D
