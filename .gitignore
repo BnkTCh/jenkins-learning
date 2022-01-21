@@ -2,3 +2,4 @@ db_data/*
 jenkins_home/*
 jenkins_home/.*
 *remote-key*
+*agent-ubuntu*
